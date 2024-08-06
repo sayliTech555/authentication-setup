@@ -1,6 +1,11 @@
 
+const jwt = require("jsonwebtoken")
 const User=require("../models/user")
 const { sendError } = require("../utills/helper")
+
+const newtoken=(user)=>{
+    return jwt.sign({userId:user._id}, process.env.JWT_SECRET_KEY,{expiresIn:"1d"})
+}
 
 exports.createUser=async (req,res)=>{
     const {name,email,password}=req.body
@@ -15,11 +20,25 @@ exports.createUser=async (req,res)=>{
 }
 
 
-exports.signin=(req,res)=>{
+exports.signin=async(req,res)=>{
     const {email,password}=req.body
-    if(!email.trim() || !password.trim()){
+    if(!email || !password){
         return sendError(res,"Email or password wrong")
     }
+
+    const user=await User.findOne({email})
+    if(!user){
+        return sendError(res,"User not exist")
+    }
+
+    const isMatch=await user.comparePassword(password)
+    if(!isMatch){
+        return sendError(res,"Email or password not match")
+    }
+
+    const token=newtoken(user)
+
+    res.json({success:true,user:{name:user.name,email:user.email,id:user._id}})
 }
 
 
