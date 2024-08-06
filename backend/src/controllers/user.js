@@ -2,6 +2,8 @@
 const jwt = require("jsonwebtoken")
 const User=require("../models/user")
 const { sendError } = require("../utills/helper")
+const VerifacationToken =require("../models/verificationToken")
+const { generateOtp } = require("../utills/mail")
 
 const newtoken=(user)=>{
     return jwt.sign({userId:user._id}, process.env.JWT_SECRET_KEY,{expiresIn:"1d"})
@@ -14,6 +16,12 @@ exports.createUser=async (req,res)=>{
     
     const newuser=new User(req.body)
 
+    const OTP=generateOtp()
+    const verificationToken=new VerifacationToken({
+        owner:newuser._id,
+        otp:OTP
+    })
+    await verificationToken.save()
     await newuser.save()
     console.log("request",req.body)
     res.send(newuser)
@@ -38,7 +46,7 @@ exports.signin=async(req,res)=>{
 
     const token=newtoken(user)
 
-    res.json({success:true,user:{name:user.name,email:user.email,id:user._id}})
+    res.json({success:true,user:{name:user.name,email:user.email,id:user._id,token}})
 }
 
 
