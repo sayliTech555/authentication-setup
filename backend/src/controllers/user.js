@@ -3,7 +3,8 @@ const jwt = require("jsonwebtoken")
 const User=require("../models/user")
 const { sendError } = require("../utills/helper")
 const VerifacationToken =require("../models/verificationToken")
-const { generateOtp } = require("../utills/mail")
+const { generateOtp, mailTransport } = require("../utills/mail")
+const { isValidObjectId } = require("mongoose")
 
 const newtoken=(user)=>{
     return jwt.sign({userId:user._id}, process.env.JWT_SECRET_KEY,{expiresIn:"1d"})
@@ -23,6 +24,16 @@ exports.createUser=async (req,res)=>{
     })
     await verificationToken.save()
     await newuser.save()
+
+    mailTransport().sendMail({
+        from:"emailverification@gmail.com",
+        to:newuser.email,
+        subject:"Verify Your email account",
+        html:`<h1>${OTP}</h1>`
+    })
+
+
+
     console.log("request",req.body)
     res.send(newuser)
 }
@@ -50,3 +61,37 @@ exports.signin=async(req,res)=>{
 }
 
 
+exports.verifyEmail=async(req,res)=>{
+    const {userId,otp}=req.body
+
+    if(!userId || !otp ) return sendError(res,"Invalid request, missing parameter")
+
+    if(!isValidObjectId(userId))   return sendError(res,"Invalid user Id") 
+
+     const user=await  User.findById(userId)  
+     if(!user) return sendError(res,"Sorry , user not found !")
+
+     if(user.verified)  return sendError(res,"This Account already verified") 
+
+     const token=await VerifacationToken.findOne({owner:user._id})
+     if(!token) return sendError(res,"Sorry , user not found !")
+
+      const isMatch=await token.compareToken(otp) 
+      if(!isMatch) return sendError(res,"Please provide valid token") 
+
+        user.verified=true
+
+    await VerifacationToken.findByIdAndDelete(token._id)
+    await user.save()
+
+
+    mailTransport().sendMail({
+        from:"emailverification@gmail.com",
+        to:user.email,
+        subject:"Verify Your email account",
+        html:`<h1>Email Verified Succesfully</h1>`
+    })
+
+
+    res.status(200).json({success:true,message:"your email verified succesfully",user:user})
+}
