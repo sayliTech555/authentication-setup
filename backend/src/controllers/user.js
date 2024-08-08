@@ -41,6 +41,7 @@ exports.createUser=async (req,res)=>{
 
 exports.signin=async(req,res)=>{
     const {email,password}=req.body
+    console.log("res",req.body)
     if(!email || !password){
         return sendError(res,"Email or password wrong")
     }

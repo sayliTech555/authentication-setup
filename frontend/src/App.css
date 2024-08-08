@@ -1,0 +1,31 @@
+.typewriter-text {
+  color: #ebdc34; 
+  font-size: 30px;
+  font-weight: bold; 
+}
+
+.carousel-item {
+  display: none;
+}
+.carousel-item.active {
+  display: block;
+}
+.indicator.active {
+  background-color: #000;
+}
+.privateRoute{
+  display: flex;
+}
+
+.custom-toast {
+  background-color: rgb(245, 49, 49) !important;
+}
+.custom-toast-success {
+  background-color: rgb(100, 148, 22) !important;
+}
+.custom-toast-body {
+  color: white !important;
+}
+.custom-toast-body-center {
+  color: black !important;
+}
