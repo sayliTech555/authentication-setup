@@ -1,10 +1,11 @@
 
 const jwt = require("jsonwebtoken")
 const User=require("../models/user")
-const { sendError } = require("../utills/helper")
+const { sendError, cryptoRandomBytes } = require("../utills/helper")
 const VerifacationToken =require("../models/verificationToken")
 const { generateOtp, mailTransport } = require("../utills/mail")
 const { isValidObjectId } = require("mongoose")
+const ResetToken = require("../models/resetToken")
 
 const newtoken=(user)=>{
     return jwt.sign({userId:user._id}, process.env.JWT_SECRET_KEY,{expiresIn:"1d"})
@@ -95,4 +96,33 @@ exports.verifyEmail=async(req,res)=>{
 
 
     res.status(200).json({success:true,message:"your email verified succesfully",user:user})
+}
+
+exports.forgetPassword=async(req,res)=>{
+        const {email}=req.body
+        if(!email) return sendError(res,"Please provide valid email")  
+         const user =await  User.findOne({email})
+        if(!user)   return sendError(res,"User Not Exist") 
+
+        const token=await ResetToken.findOne({owner:user._id})    
+        
+        if(token) return sendError(res,"Only after 1 hour you can request for another token !") 
+
+        const randomToken=await cryptoRandomBytes()   
+
+        console.log("randomToken",randomToken)
+        const resetToken= new ResetToken({owner:user._id,otp:randomToken})
+        await resetToken.save()
+
+        
+        mailTransport().sendMail({
+            from:"security@gmail.com",
+            to:user.email,
+            subject:"Reset mail",
+            html:`<button><p><a href="http://localhost:3000/reset-password?token=${randomToken}&id=${user._id}" target="_blank" class="button">Learn More</a></p>
+ </button>`
+        })
+
+        res.json({success:true,message:"Password reset link sent to your email"})
+
 }
