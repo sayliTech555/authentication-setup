@@ -30,7 +30,9 @@ resetTokenSchema.pre("save", async function(next){
 
 resetTokenSchema.methods.compareToken = async function (otp){
     try {
+        console.log("otp==>",otp,this.otp)
         const result= await bcrypt.compareSync(otp,this.otp)
+        console.log("result==>",result)
         return result
     } catch (error) {
         return error

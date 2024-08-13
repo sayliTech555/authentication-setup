@@ -109,12 +109,9 @@ exports.forgetPassword=async(req,res)=>{
         if(token) return sendError(res,"Only after 1 hour you can request for another token !") 
 
         const randomToken=await cryptoRandomBytes()   
-
         console.log("randomToken",randomToken)
         const resetToken= new ResetToken({owner:user._id,otp:randomToken})
-        await resetToken.save()
-
-        
+        await resetToken.save()    
         mailTransport().sendMail({
             from:"security@gmail.com",
             to:user.email,
@@ -124,5 +121,32 @@ exports.forgetPassword=async(req,res)=>{
         })
 
         res.json({success:true,message:"Password reset link sent to your email"})
+}
+
+exports.resetPassword=async(req,res)=>{
+
+    const {password} =req.body
+
+    const user=await User.findById(req.user._id)
+    if(!user) return sendError(res, "user Not Found !")
+
+    const isSamePassword = await user.comparePassword(password)    
+    if(isSamePassword) return sendError(res,"new password must be the differnt")
+
+    if(password.trim().length<8 || password.trim().length>20  ) return sendError(res,"password must be 8 to 20 character long !")    
+
+    user.password=password.trim()
+    await user.save()    
+
+    await ResetToken.findOneAndDelete({owner:user._id})
+
+    mailTransport().sendMail({
+        from:"security@gmail.com",
+        to:user.email,
+        subject:"Reset mail successfull",
+        html:`<h1>password reset successfully</h1>`
+    })
+
+    res.json({success:true,message:"password reset successfully"})
 
 }
