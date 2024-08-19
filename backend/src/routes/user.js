@@ -8,6 +8,9 @@ router.post("/signin",signin)
 router.post("/verify-email",verifyEmail)
 router.post("/forget-password",forgetPassword)
 router.post("/reset-password",isResetTokenValid,resetPassword)
+router.post("/verify-token",isResetTokenValid,(req,res)=>{
+res.json({success:true})
+})
 
 
 module.exports=router
